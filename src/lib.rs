@@ -31,14 +31,14 @@ async fn handler(update: tg_flows::Update) -> Result<(), Box<dyn std::error::Err
         let thread_id = match store_flows::get(chat_id.to_string().as_str()) {
             Some(ti) => {
                 if text == "/restart" {
-                    delete_thread(ti.as_str().unwrap()).await?;
+                    delete_thread(ti.as_str().unwrap()).await; // No `?` since the function returns `()`
                     store_flows::del(chat_id.to_string().as_str());
-                    return Ok(());
+                    return Ok(()); // Early return when the thread is restarted
                 }
                 ti.as_str().unwrap().to_owned()
             }
             None => {
-                let ti = create_thread().await;
+                let ti = create_thread().await?;
                 store_flows::set(
                     chat_id.to_string().as_str(),
                     serde_json::Value::String(ti.clone()),
@@ -50,7 +50,7 @@ async fn handler(update: tg_flows::Update) -> Result<(), Box<dyn std::error::Err
 
         // Send the user's message to OpenAI and retrieve the response
         let response = run_message(thread_id.as_str(), String::from(text)).await;
-        tele.send_message(chat_id, response).await?;
+        tele.send_message(chat_id, response).await?; // Handle the result of send_message with `?`
     }
     Ok(())
 }
