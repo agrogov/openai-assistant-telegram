@@ -24,33 +24,33 @@ async fn handler(update: tg_flows::Update) -> Result<(), Box<dyn std::error::Err
     let tele = Telegram::new(telegram_token);
 
     if let UpdateKind::Message(msg) = update.kind {
-        let text = msg.text().unwrap_or(""); // Unwrap the text or provide a default empty string
+        let text = msg.text().unwrap_or(""); // Unwrap the text or use an empty string
         let chat_id = msg.chat.id;
 
         // Check if a thread ID exists for the chat, else create a new one
         let thread_id = match store_flows::get(chat_id.to_string().as_str()) {
             Some(ti) => {
                 if text == "/restart" {
-                    delete_thread(ti.as_str().unwrap()).await; // Await if delete_thread is async
+                    delete_thread(ti.as_str().unwrap()).await; // Await the async function
                     store_flows::del(chat_id.to_string().as_str());
-                    return Ok(()); // Return early on restart
+                    return Ok(()); // Early return on restart
                 }
-                ti.as_str().unwrap().to_owned() // This returns a String, so no need for ?
+                ti.as_str().unwrap().to_owned() // Return the string directly, no `?` needed
             }
             None => {
-                let ti = create_thread().await?; // Handle the Result properly with ?
+                let ti = create_thread().await?; // Use `?` because `create_thread` returns `Result`
                 store_flows::set(
                     chat_id.to_string().as_str(),
                     serde_json::Value::String(ti.clone()),
                     None,
                 );
-                ti // Return the new thread ID as String
+                ti // Return the new thread ID as a String
             }
         };
 
         // Send the user's message to OpenAI and retrieve the response
         let response = run_message(thread_id.as_str(), String::from(text)).await;
-        tele.send_message(chat_id, response).await?; // Await the async send_message and handle the result with ?
+        tele.send_message(chat_id, response).await?; // Await the async send_message and handle the result with `?`
     }
     Ok(())
 }
