@@ -19,8 +19,7 @@ pub async fn on_deploy() {
 }
 
 #[update_handler]
-async fn handler(update: tg_flows::Update) {
-    logger::init();
+async fn handler(update: tg_flows::Update) -> Result<(), Box<dyn std::error::Error>> {
     let telegram_token = std::env::var("telegram_token").expect("Missing TELEGRAM_TOKEN");
     let tele = Telegram::new(telegram_token);
 
@@ -32,9 +31,9 @@ async fn handler(update: tg_flows::Update) {
         let thread_id = match store_flows::get(chat_id.to_string().as_str()) {
             Some(ti) => {
                 if text == "/restart" {
-                    delete_thread(ti.as_str().unwrap()).await;
+                    delete_thread(ti.as_str().unwrap()).await?;
                     store_flows::del(chat_id.to_string().as_str());
-                    return;
+                    return Ok(());
                 }
                 ti.as_str().unwrap().to_owned()
             }
@@ -51,8 +50,9 @@ async fn handler(update: tg_flows::Update) {
 
         // Send the user's message to OpenAI and retrieve the response
         let response = run_message(thread_id.as_str(), String::from(text)).await;
-        let _ = tele.send_message(chat_id, response).await;
+        tele.send_message(chat_id, response).await?;
     }
+    Ok(())
 }
 
 async fn create_thread() -> String {
