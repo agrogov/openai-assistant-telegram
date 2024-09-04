@@ -31,7 +31,7 @@ async fn handler(update: tg_flows::Update) -> Result<(), Box<dyn std::error::Err
         let thread_id = match store_flows::get(chat_id.to_string().as_str()) {
             Some(ti) => {
                 if text == "/restart" {
-                    delete_thread(ti.as_str().unwrap()).await; // Await the async function
+                    delete_thread(ti.as_str().unwrap()).await; // Await if delete_thread is async
                     store_flows::del(chat_id.to_string().as_str());
                     return Ok(()); // Early return on restart
                 }
