@@ -24,33 +24,33 @@ async fn handler(update: tg_flows::Update) -> Result<(), Box<dyn std::error::Err
     let tele = Telegram::new(telegram_token);
 
     if let UpdateKind::Message(msg) = update.kind {
-        let text = msg.text().unwrap_or("");
+        let text = msg.text().unwrap_or(""); // Unwrap the text or provide a default empty string
         let chat_id = msg.chat.id;
 
         // Check if a thread ID exists for the chat, else create a new one
         let thread_id = match store_flows::get(chat_id.to_string().as_str()) {
             Some(ti) => {
                 if text == "/restart" {
-                    delete_thread(ti.as_str().unwrap()).await; // No `?` since the function returns `()`
+                    delete_thread(ti.as_str().unwrap()).await; // Await if delete_thread is async
                     store_flows::del(chat_id.to_string().as_str());
-                    return Ok(()); // Early return when the thread is restarted
+                    return Ok(()); // Return early on restart
                 }
-                ti.as_str().unwrap().to_owned()
+                ti.as_str().unwrap().to_owned() // This returns a String, so no need for ?
             }
             None => {
-                let ti = create_thread().await?;
+                let ti = create_thread().await?; // Handle the Result properly with ?
                 store_flows::set(
                     chat_id.to_string().as_str(),
                     serde_json::Value::String(ti.clone()),
                     None,
                 );
-                ti
+                ti // Return the new thread ID as String
             }
         };
 
         // Send the user's message to OpenAI and retrieve the response
         let response = run_message(thread_id.as_str(), String::from(text)).await;
-        tele.send_message(chat_id, response).await?; // Handle the result of send_message with `?`
+        tele.send_message(chat_id, response).await?; // Await the async send_message and handle the result with ?
     }
     Ok(())
 }
